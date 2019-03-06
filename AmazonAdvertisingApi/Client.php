@@ -210,7 +210,7 @@ class Client
     }
 
     public function listBiddableKeywords($data = null, $type = 'sp')
-    {
+    {   
         return $this->_operation("$type/keywords", $data);
     }
 
@@ -244,14 +244,14 @@ class Client
         return $this->_operation("negativeKeywords/{$keywordId}", null, "DELETE");
     }
 
-    public function listNegativeKeywords($data = null)
+    public function listNegativeKeywords($data = null, $type = 'sp')
     {
-        return $this->_operation("negativeKeywords", $data);
+        return $this->_operation("$type/negativeKeywords", $data);
     }
 
     public function listNegativeKeywordsEx($data = null)
     {
-        return $this->_operation("negativeKeywords/extended", $data);
+        return $this->_operation("sp/negativeKeywords/extended", $data);
     }
 
     public function getCampaignNegativeKeyword($keywordId)

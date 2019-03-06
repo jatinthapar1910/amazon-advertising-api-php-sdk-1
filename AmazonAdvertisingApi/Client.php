@@ -32,7 +32,7 @@ class Client
         $this->endpoints = $regions->endpoints;
 
         $versions = new Versions();
-        $this->versionStrings = $versions->versionStrings;
+        $this->versionStrings = $versions->versionStringsV2;
 
         $this->apiVersion = $this->versionStrings["apiVersion"];
         $this->applicationVersion = $this->versionStrings["applicationVersion"];
@@ -83,7 +83,7 @@ class Client
         if (array_key_exists("access_token", $response_array)) {
             $this->config["accessToken"] = $response_array["access_token"];
         } else {
-            $this->_logAndThrow("Unable to refresh token. 'access_token' not found in response. ". print_r($response, true));
+            $this->_logAndThrow("Unable to refresh token. 'access_token' not found in response. ". print_r($response));
         }
 
         return $response;
@@ -139,14 +139,14 @@ class Client
         return $this->_operation("campaigns/{$campaignId}", null, "DELETE");
     }
 
-    public function listCampaigns($data = null)
-    {
-        return $this->_operation("campaigns", $data);
+    public function listCampaigns($data = null, $type = 'sp')
+    {   
+        return $this->_operation("$type/campaigns", $data);
     }
 
     public function listCampaignsEx($data = null)
-    {
-        return $this->_operation("campaigns/extended", $data);
+    {   
+        return $this->_operation("sp/campaigns/extended", $data);
     }
 
     public function getAdGroup($adGroupId)
@@ -181,7 +181,7 @@ class Client
 
     public function listAdGroupsEx($data = null)
     {
-        return $this->_operation("adGroups/extended", $data);
+        return $this->_operation("sp/adGroups/extended", $data);
     }
 
     public function getBiddableKeyword($keywordId)
@@ -209,14 +209,14 @@ class Client
         return $this->_operation("keywords/{$keywordId}", null, "DELETE");
     }
 
-    public function listBiddableKeywords($data = null)
+    public function listBiddableKeywords($data = null, $type = 'sp')
     {
-        return $this->_operation("keywords", $data);
+        return $this->_operation("$type/keywords", $data);
     }
 
     public function listBiddableKeywordsEx($data = null)
     {
-        return $this->_operation("keywords/extended", $data);
+        return $this->_operation("sp/keywords/extended", $data);
     }
 
     public function getNegativeKeyword($keywordId)
@@ -321,7 +321,7 @@ class Client
 
     public function listProductAdsEx($data = null)
     {
-        return $this->_operation("productAds/extended", $data);
+        return $this->_operation("sp/productAds/extended", $data);
     }
 
     public function getAdGroupBidRecommendations($adGroupId)
@@ -434,15 +434,16 @@ class Client
         $headers = array(
             "Authorization: bearer {$this->config["accessToken"]}",
             "Content-Type: application/json",
-            "User-Agent: {$this->userAgent}"
+            "User-Agent: {$this->userAgent}",
+            "Amazon-Advertising-API-ClientId: {$this->config["clientId"]}"
         );
 
         if (!is_null($this->profileId)) {
             array_push($headers, "Amazon-Advertising-API-Scope: {$this->profileId}");
         }
-
+        
         $request = new CurlRequest();
-        $url = "{$this->endpoint}/{$interface}";
+        $url = "{$this->endpoint}/{$interface}"; 
         $this->requestId = null;
         $data = "";
 
@@ -468,7 +469,7 @@ class Client
             default:
                 $this->_logAndThrow("Unknown verb {$method}.");
         }
-
+        
         $request->setOption(CURLOPT_URL, $url);
         $request->setOption(CURLOPT_HTTPHEADER, $headers);
         $request->setOption(CURLOPT_USERAGENT, $this->userAgent);
@@ -482,7 +483,7 @@ class Client
         $this->requestId = $request->requestId;
         $response_info = $request->getInfo();
         $request->close();
-
+        
         if ($response_info["http_code"] == 307) {
             /* application/octet-stream */
             return $this->_download($response_info["redirect_url"], true);

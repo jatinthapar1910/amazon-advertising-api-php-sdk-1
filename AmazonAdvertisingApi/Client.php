@@ -32,7 +32,7 @@ class Client
         $this->endpoints = $regions->endpoints;
 
         $versions = new Versions();
-        $this->versionStrings = $versions->versionStringsV2;
+        $this->versionStrings = $versions->versionStrings;
 
         $this->apiVersion = $this->versionStrings["apiVersion"];
         $this->applicationVersion = $this->versionStrings["applicationVersion"];
@@ -121,7 +121,7 @@ class Client
 
     public function getCampaignEx($campaignId)
     {
-        return $this->_operation("hsa/campaigns/extended/{$campaignId}");
+        return $this->_operation("campaigns/extended/{$campaignId}");
     }
 
     public function createCampaigns($data)
@@ -139,14 +139,14 @@ class Client
         return $this->_operation("campaigns/{$campaignId}", null, "DELETE");
     }
 
-    public function listCampaigns($data = null, $type = 'sp')
-    {   
-        return $this->_operation("$type/campaigns", $data);
+    public function listCampaigns($data = null)
+    {
+        return $this->_operation("campaigns", $data);
     }
 
     public function listCampaignsEx($data = null)
-    {   
-        return $this->_operation("sp/campaigns/extended", $data);
+    {
+        return $this->_operation("campaigns/extended", $data);
     }
 
     public function getAdGroup($adGroupId)
@@ -156,7 +156,7 @@ class Client
 
     public function getAdGroupEx($adGroupId)
     {
-        return $this->_operation("sp/adGroups/extended/{$adGroupId}");
+        return $this->_operation("adGroups/extended/{$adGroupId}");
     }
 
     public function createAdGroups($data)
@@ -181,7 +181,7 @@ class Client
 
     public function listAdGroupsEx($data = null)
     {
-        return $this->_operation("sp/adGroups/extended", $data);
+        return $this->_operation("adGroups/extended", $data);
     }
 
     public function getBiddableKeyword($keywordId)
@@ -209,14 +209,14 @@ class Client
         return $this->_operation("keywords/{$keywordId}", null, "DELETE");
     }
 
-    public function listBiddableKeywords($data = null, $type = 'sp')
-    {   
-        return $this->_operation("$type/keywords", $data);
+    public function listBiddableKeywords($data = null)
+    {
+        return $this->_operation("keywords", $data);
     }
 
     public function listBiddableKeywordsEx($data = null)
     {
-        return $this->_operation("sp/keywords/extended", $data);
+        return $this->_operation("keywords/extended", $data);
     }
 
     public function getNegativeKeyword($keywordId)
@@ -244,14 +244,14 @@ class Client
         return $this->_operation("negativeKeywords/{$keywordId}", null, "DELETE");
     }
 
-    public function listNegativeKeywords($data = null, $type = 'sp')
+    public function listNegativeKeywords($data = null)
     {
-        return $this->_operation("$type/negativeKeywords", $data);
+        return $this->_operation("negativeKeywords", $data);
     }
 
     public function listNegativeKeywordsEx($data = null)
     {
-        return $this->_operation("sp/negativeKeywords/extended", $data);
+        return $this->_operation("negativeKeywords/extended", $data);
     }
 
     public function getCampaignNegativeKeyword($keywordId)
@@ -321,7 +321,7 @@ class Client
 
     public function listProductAdsEx($data = null)
     {
-        return $this->_operation("sp/productAds/extended", $data);
+        return $this->_operation("productAds/extended", $data);
     }
 
     public function getAdGroupBidRecommendations($adGroupId)
@@ -384,15 +384,14 @@ class Client
         }
         return $req;
     }
-    
-    public function requestAsinsReport($recordType, $data = null)
-    {   
-        return $this->_operation("{$recordType}/report", $data, "POST");
-    }
 
-    public function requestReport($recordType, $data = null, $type = 'sp')
-    {   
-        return $this->_operation("$type/{$recordType}/report", $data, "POST");
+    public function requestReport($recordType, $data = null, $type = null)
+    {
+        if(is_null($type)){
+            return $this->_operation("{$recordType}/report", $data, "POST");
+        }else{
+            return $this->_operation("$type/{$recordType}/report", $data, "POST");
+        }
     }
 
     public function getReport($reportId)
@@ -439,16 +438,15 @@ class Client
         $headers = array(
             "Authorization: bearer {$this->config["accessToken"]}",
             "Content-Type: application/json",
-            "User-Agent: {$this->userAgent}",
-            "Amazon-Advertising-API-ClientId: {$this->config["clientId"]}"
+            "User-Agent: {$this->userAgent}"
         );
 
         if (!is_null($this->profileId)) {
             array_push($headers, "Amazon-Advertising-API-Scope: {$this->profileId}");
         }
-        
+
         $request = new CurlRequest();
-        $url = "{$this->endpoint}/{$interface}"; 
+        $url = "{$this->endpoint}/{$interface}";
         $this->requestId = null;
         $data = "";
 
@@ -474,7 +472,7 @@ class Client
             default:
                 $this->_logAndThrow("Unknown verb {$method}.");
         }
-        
+
         $request->setOption(CURLOPT_URL, $url);
         $request->setOption(CURLOPT_HTTPHEADER, $headers);
         $request->setOption(CURLOPT_USERAGENT, $this->userAgent);
@@ -488,7 +486,7 @@ class Client
         $this->requestId = $request->requestId;
         $response_info = $request->getInfo();
         $request->close();
-        
+
         if ($response_info["http_code"] == 307) {
             /* application/octet-stream */
             return $this->_download($response_info["redirect_url"], true);

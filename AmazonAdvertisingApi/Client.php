@@ -121,7 +121,7 @@ class Client
 
     public function getCampaignEx($campaignId)
     {
-        return $this->_operation("campaigns/extended/{$campaignId}");
+        return $this->_operation("hsa/campaigns/extended/{$campaignId}");
     }
 
     public function createCampaigns($data)
@@ -156,7 +156,7 @@ class Client
 
     public function getAdGroupEx($adGroupId)
     {
-        return $this->_operation("adGroups/extended/{$adGroupId}");
+        return $this->_operation("sp/adGroups/extended/{$adGroupId}");
     }
 
     public function createAdGroups($data)
@@ -384,10 +384,15 @@ class Client
         }
         return $req;
     }
-
-    public function requestReport($recordType, $data = null)
-    {
+    
+    public function requestAsinsReport($recordType, $data = null)
+    {   
         return $this->_operation("{$recordType}/report", $data, "POST");
+    }
+
+    public function requestReport($recordType, $data = null, $type = 'sp')
+    {   
+        return $this->_operation("$type/{$recordType}/report", $data, "POST");
     }
 
     public function getReport($reportId)

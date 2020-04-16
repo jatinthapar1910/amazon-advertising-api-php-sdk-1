@@ -1,4 +1,5 @@
 <?php
+
 namespace AmazonAdvertisingApi;
 
 require_once "Versions.php";
@@ -13,7 +14,8 @@ class Client
         "region" => null,
         "accessToken" => null,
         "refreshToken" => null,
-        "sandbox" => false);
+        "sandbox" => false
+    );
 
     private $apiVersion = null;
     private $applicationVersion = null;
@@ -33,11 +35,10 @@ class Client
 
         $versions = new Versions();
         $this->versionStrings = $versions->versionStringsV2;
-
-        $this->apiVersion = $this->versionStrings["apiVersion"];
         $this->applicationVersion = $this->versionStrings["applicationVersion"];
         $this->userAgent = "AdvertisingAPI PHP Client Library v{$this->applicationVersion}";
 
+        $this->apiVersion = $this->versionStrings["apiVersion"];
         $this->_validateConfig($config);
         $this->_validateConfigParameters();
         $this->_setEndpoints();
@@ -46,6 +47,12 @@ class Client
             /* convenience */
             $this->doRefreshToken();
         }
+    }
+
+    public function resetEndPointsForV3()
+    {
+        $this->apiVersion = null;
+        $this->_setEndpoints();
     }
 
     public function doRefreshToken()
@@ -61,11 +68,12 @@ class Client
             "grant_type" => "refresh_token",
             "refresh_token" => $refresh_token,
             "client_id" => $this->config["clientId"],
-            "client_secret" => $this->config["clientSecret"]);
+            "client_secret" => $this->config["clientSecret"]
+        );
 
         $data = "";
         foreach ($params as $k => $v) {
-            $data .= "{$k}=".rawurlencode($v)."&";
+            $data .= "{$k}=" . rawurlencode($v) . "&";
         }
 
         $url = "https://{$this->tokenUrl}";
@@ -83,7 +91,7 @@ class Client
         if (array_key_exists("access_token", $response_array)) {
             $this->config["accessToken"] = $response_array["access_token"];
         } else {
-            $this->_logAndThrow("Unable to refresh token. 'access_token' not found in response. ". print_r($response));
+            $this->_logAndThrow("Unable to refresh token. 'access_token' not found in response. " . print_r($response));
         }
 
         return $response;
@@ -140,12 +148,15 @@ class Client
     }
 
     public function listCampaigns($data = null, $type = 'sp')
-    {   
+    {
+        if ($type == 'sb')
+            $this->resetEndPointsForV3();
+
         return $this->_operation("$type/campaigns", $data);
     }
 
     public function listCampaignsEx($data = null)
-    {   
+    {
         return $this->_operation("sp/campaigns/extended", $data);
     }
 
@@ -174,14 +185,19 @@ class Client
         return $this->_operation("adGroups/{$adGroupId}", null, "DELETE");
     }
 
-    public function listAdGroups($data = null)
+    public function listAdGroups($data = null, $type)
     {
-        return $this->_operation("adGroups", $data);
+        return $this->_operation("$type/adGroups", $data);
     }
 
-    public function listAdGroupsEx($data = null)
+    public function listAdGroupsEx($data = null, $type = "sp")
     {
-        return $this->_operation("sp/adGroups/extended", $data);
+        if ($type === 'sb' || $type === 'sd') {
+            $this->resetEndPointsForV3();
+            return $this->listAdGroups($data, $type);
+        } else {
+            return $this->_operation("$type/adGroups/extended", $data);
+        }
     }
 
     public function getBiddableKeyword($keywordId)
@@ -210,7 +226,10 @@ class Client
     }
 
     public function listBiddableKeywords($data = null, $type = 'sp')
-    {   
+    {
+        if ($type === 'sb')
+            $this->resetEndPointsForV3();
+
         return $this->_operation("$type/keywords", $data);
     }
 
@@ -246,6 +265,9 @@ class Client
 
     public function listNegativeKeywords($data = null, $type = 'sp')
     {
+        if ($type === 'sb')
+            $this->resetEndPointsForV3();
+
         return $this->_operation("$type/negativeKeywords", $data);
     }
 
@@ -338,7 +360,8 @@ class Client
     {
         $data = array(
             "adGroupId" => $adGroupId,
-            "keywords" => $data);
+            "keywords" => $data
+        );
         return $this->_operation("keywords/bidRecommendations", $data, "POST");
     }
 
@@ -384,14 +407,14 @@ class Client
         }
         return $req;
     }
-    
+
     public function requestAsinsReport($recordType, $data = null)
-    {   
+    {
         return $this->_operation("{$recordType}/report", $data, "POST");
     }
 
     public function requestReport($recordType, $data = null, $type = 'sp')
-    {   
+    {
         return $this->_operation("$type/{$recordType}/report", $data, "POST");
     }
 
@@ -446,9 +469,9 @@ class Client
         if (!is_null($this->profileId)) {
             array_push($headers, "Amazon-Advertising-API-Scope: {$this->profileId}");
         }
-        
+
         $request = new CurlRequest();
-        $url = "{$this->endpoint}/{$interface}"; 
+        $url = "{$this->endpoint}/{$interface}";
         $this->requestId = null;
         $data = "";
 
@@ -457,7 +480,7 @@ class Client
                 if (!empty($params)) {
                     $url .= "?";
                     foreach ($params as $k => $v) {
-                        $url .= "{$k}=".rawurlencode($v)."&";
+                        $url .= "{$k}=" . rawurlencode($v) . "&";
                     }
                     $url = rtrim($url, "&");
                 }
@@ -474,7 +497,7 @@ class Client
             default:
                 $this->_logAndThrow("Unknown verb {$method}.");
         }
-        
+
         $request->setOption(CURLOPT_URL, $url);
         $request->setOption(CURLOPT_HTTPHEADER, $headers);
         $request->setOption(CURLOPT_USERAGENT, $this->userAgent);
@@ -488,7 +511,7 @@ class Client
         $this->requestId = $request->requestId;
         $response_info = $request->getInfo();
         $request->close();
-        
+
         if ($response_info["http_code"] == 307) {
             /* application/octet-stream */
             return $this->_download($response_info["redirect_url"], true);
@@ -502,15 +525,19 @@ class Client
                     $requestId = json_decode($response, true)["requestId"];
                 }
             }
-            return array("success" => false,
-                    "code" => $response_info["http_code"],
-                    "response" => $response,
-                    "requestId" => $requestId);
+            return array(
+                "success" => false,
+                "code" => $response_info["http_code"],
+                "response" => $response,
+                "requestId" => $requestId
+            );
         } else {
-            return array("success" => true,
-                    "code" => $response_info["http_code"],
-                    "response" => $response,
-                    "requestId" => $this->requestId);
+            return array(
+                "success" => true,
+                "code" => $response_info["http_code"],
+                "response" => $response,
+                "requestId" => $this->requestId
+            );
         }
     }
 
@@ -581,6 +608,7 @@ class Client
             } else {
                 $this->endpoint = "https://{$this->endpoints[$region_code]["prod"]}/{$this->apiVersion}";
             }
+
             $this->tokenUrl = $this->endpoints[$region_code]["tokenUrl"];
         } else {
             $this->_logAndThrow("Invalid region.");

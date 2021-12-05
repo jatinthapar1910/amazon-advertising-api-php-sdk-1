@@ -316,9 +316,9 @@ class Client
         return $this->_operation("productAds/{$productAdId}");
     }
 
-    public function getProductAdEx($productAdId)
+    public function getProductAdEx($productAdId, $type = 'sp')
     {
-        return $this->_operation("productAds/extended/{$productAdId}");
+        return $this->_operation("$type/productAds/extended/{$productAdId}");
     }
 
     public function createProductAds($data)
